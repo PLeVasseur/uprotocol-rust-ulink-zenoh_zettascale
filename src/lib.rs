@@ -275,7 +275,7 @@ impl RpcClient for ULinkZenoh {
             .with_value(value)
             .with_attachment(attachment.build())
             .target(QueryTarget::BestMatching)
-            .timeout(Duration::from_millis(1000));
+            .timeout(Duration::from_millis(2000));
 
         // Send the query
         let Ok(replies) = getbuilder.res().await else {
@@ -284,11 +284,25 @@ impl RpcClient for ULinkZenoh {
             )));
         };
 
-        let Ok(reply) = replies.recv_async().await else {
-            return Err(RpcMapperError::UnexpectedError(String::from(
-                "Error while receiving Zenoh reply",
-            )));
+        let reply = match replies.recv_async().await {
+            Ok(reply) => reply,
+            Err(e) => {
+                // Print out the error
+                println!("Error while receiving Zenoh reply: {:?}", e);
+
+                // Then return a custom error
+                return Err(RpcMapperError::UnexpectedError(format!(
+                    "Error while receiving Zenoh reply: {:?}",
+                    e
+                )));
+            }
         };
+
+        // let Ok(reply) = replies.recv_async().await else {
+        //     return Err(RpcMapperError::UnexpectedError(String::from(
+        //         "Error while receiving Zenoh reply",
+        //     )));
+        // };
         match reply.sample {
             Ok(sample) => {
                 let Ok(encoding) = sample.value.encoding.suffix().parse::<i32>() else {
