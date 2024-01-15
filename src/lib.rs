@@ -67,7 +67,7 @@ impl ULinkZenoh {
         })
     }
 
-    fn to_zenoh_key_string(uri: &UUri) -> Result<String, UStatus> {
+    pub fn to_zenoh_key_string(uri: &UUri) -> Result<String, UStatus> {
         // uProtocol Uri format: https://github.com/eclipse-uprotocol/uprotocol-spec/blob/6f0bb13356c0a377013bdd3342283152647efbf9/basics/uri.adoc#11-rfc3986
         // up://<user@><device>.<domain><:port>/<ue_name>/<ue_version>/<resource|rpc.method><#message>
         //            UAuthority               /        UEntity       /           UResource
