@@ -31,6 +31,7 @@ use uprotocol_sdk::{
         validator::UriValidator,
     },
 };
+use zenoh::runtime::Runtime;
 use zenoh::{
     config::Config,
     prelude::{r#async::*, Sample},
@@ -51,20 +52,35 @@ pub struct ULinkZenoh {
 impl ULinkZenoh {
     /// # Errors
     /// Will return `Err` if unable to create Zenoh session
-    pub async fn new(config: Config) -> Result<ULinkZenoh, UStatus> {
+    pub async fn new_from_config(config: Config) -> Result<ULinkZenoh, UStatus> {
         let Ok(session) = zenoh::open(config).res().await else {
             return Err(UStatus::fail_with_code(
                 UCode::Internal,
-                "Unable to open Zenoh session",
+                "Unable to open Zenoh session from config",
             ));
         };
-        Ok(ULinkZenoh {
+        Ok(ULinkZenoh::new(session))
+    }
+
+    pub async fn new_from_runtime(runtime: Runtime) -> Result<ULinkZenoh, UStatus> {
+        // create a zenoh Session that shares the same Runtime as zenohd
+        let Ok(session) = zenoh::init(runtime).res().await else {
+            return Err(UStatus::fail_with_code(
+                UCode::Internal,
+                "Unable to open Zenoh session from runtime",
+            ));
+        };
+        Ok(ULinkZenoh::new(session))
+    }
+
+    fn new(session: Session) -> ULinkZenoh {
+        ULinkZenoh {
             session: Arc::new(session),
             subscriber_map: Arc::new(Mutex::new(HashMap::new())),
             queryable_map: Arc::new(Mutex::new(HashMap::new())),
             query_map: Arc::new(Mutex::new(HashMap::new())),
             callback_counter: AtomicU64::new(0),
-        })
+        }
     }
 
     pub fn to_zenoh_key_string(uri: &UUri) -> Result<String, UStatus> {

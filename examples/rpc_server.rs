@@ -28,7 +28,9 @@ use zenoh::config::Config;
 async fn main() {
     println!("uProtocol RPC server example");
     let rpc_server = Arc::new(Mutex::new(
-        ULinkZenoh::new(Config::default()).await.unwrap(),
+        ULinkZenoh::new_from_config(Config::default())
+            .await
+            .unwrap(),
     ));
 
     // create uuri

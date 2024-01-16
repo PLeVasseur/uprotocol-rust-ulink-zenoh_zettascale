@@ -36,7 +36,9 @@ fn callback(result: Result<UMessage, UStatus>) {
 #[async_std::main]
 async fn main() {
     println!("uProtocol subscriber example");
-    let subscriber = ULinkZenoh::new(Config::default()).await.unwrap();
+    let subscriber = ULinkZenoh::new_from_config(Config::default())
+        .await
+        .unwrap();
 
     // create uuri
     let uuri = UUri {
