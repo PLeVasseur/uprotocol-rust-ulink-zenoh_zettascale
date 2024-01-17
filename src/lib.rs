@@ -540,12 +540,48 @@ impl UTransport for UTransportSommr {
         };
 
         // Step 2: Check if the authority is a remote name with value "*"
-        let is_star_remote = match &topic.authority {
-            Some(authority) => authority.remote.as_ref().map_or(false, |remote| {
-                matches!(remote, Remote::Name(name) if name == "*")
-            }),
-            None => false,
+        // Step 1: Check if topic.authority exists
+        let authority_exists = topic.authority.is_some();
+
+        // Insert println!() here to check authority_exists
+        println!("authority_exists: {:?}", authority_exists);
+
+        let is_star_remote = if authority_exists {
+            // Step 2: Extract the authority reference
+            let authority_ref = topic.authority.as_ref().unwrap(); // safe unwrap because we know it exists
+
+            // Insert println!() here to check authority_ref
+            println!("authority_ref: {:?}", authority_ref);
+
+            // Step 3: Check if remote is a reference and exists
+            let remote_exists = authority_ref.remote.as_ref().is_some();
+
+            // Insert println!() here to check remote_exists
+            println!("remote_exists: {:?}", remote_exists);
+
+            if remote_exists {
+                // Step 4: Extract the remote reference
+                let remote_ref = authority_ref.remote.as_ref().unwrap(); // safe unwrap because we know it exists
+
+                // Insert println!() here to check remote_ref
+                println!("remote_ref: {:?}", remote_ref);
+
+                // Step 5: Check if the remote is a Name type with value "*"
+                matches!(remote_ref, Remote::Name(name) if name == "*")
+            } else {
+                // Remote does not exist
+                false
+            }
+        } else {
+            // Authority does not exist
+            false
         };
+        // let is_star_remote = match &topic.authority {
+        //     Some(authority) => authority.remote.as_ref().map_or(false, |remote| {
+        //         matches!(remote, Remote::Name(name) if name == "*")
+        //     }),
+        //     None => false,
+        // };
 
         // Insert println!() here to check is_star_remote
         println!("is_star_remote: {:?}", is_star_remote);
