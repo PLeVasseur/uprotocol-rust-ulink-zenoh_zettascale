@@ -536,6 +536,7 @@ impl UTransport for UTransportSommr {
             }) => "**",
             _ => &zenoh_key,
         }.to_string();
+        println!("zenoh_key: {}", &zenoh_key);
 
         // Generate listener string for users to delete
         let hashmap_key = format!(
