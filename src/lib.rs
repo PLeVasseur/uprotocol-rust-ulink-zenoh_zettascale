@@ -24,13 +24,14 @@ use uprotocol_sdk::{
     transport::{datamodel::UTransport, validator::Validators},
     uprotocol::{
         Data, UAttributes, UCode, UEntity, UMessage, UMessageType, UPayload, UPayloadFormat,
-        UStatus, UUri, Uuid,
+        UStatus, Uuid, UUri
     },
     uri::{
         serializer::{LongUriSerializer, UriSerializer},
         validator::UriValidator,
     },
 };
+use uprotocol_sdk::uprotocol::Remote;
 use zenoh::runtime::Runtime;
 use zenoh::{
     config::Config,
@@ -41,7 +42,7 @@ use zenoh::{
 };
 
 pub struct ZenohListener {}
-pub struct ULinkZenoh {
+pub struct UTransportSommr {
     session: Arc<Session>,
     subscriber_map: Arc<Mutex<HashMap<String, Subscriber<'static, ()>>>>,
     queryable_map: Arc<Mutex<HashMap<String, Queryable<'static, ()>>>>,
@@ -49,20 +50,20 @@ pub struct ULinkZenoh {
     callback_counter: AtomicU64,
 }
 
-impl ULinkZenoh {
+impl UTransportSommr {
     /// # Errors
     /// Will return `Err` if unable to create Zenoh session
-    pub async fn new_from_config(config: Config) -> Result<ULinkZenoh, UStatus> {
+    pub async fn new_from_config(config: Config) -> Result<UTransportSommr, UStatus> {
         let Ok(session) = zenoh::open(config).res().await else {
             return Err(UStatus::fail_with_code(
                 UCode::Internal,
                 "Unable to open Zenoh session from config",
             ));
         };
-        Ok(ULinkZenoh::new(session))
+        Ok(UTransportSommr::new(session))
     }
 
-    pub async fn new_from_runtime(runtime: Runtime) -> Result<ULinkZenoh, UStatus> {
+    pub async fn new_from_runtime(runtime: Runtime) -> Result<UTransportSommr, UStatus> {
         // create a zenoh Session that shares the same Runtime as zenohd
         let Ok(session) = zenoh::init(runtime).res().await else {
             return Err(UStatus::fail_with_code(
@@ -70,11 +71,11 @@ impl ULinkZenoh {
                 "Unable to open Zenoh session from runtime",
             ));
         };
-        Ok(ULinkZenoh::new(session))
+        Ok(UTransportSommr::new(session))
     }
 
-    fn new(session: Session) -> ULinkZenoh {
-        ULinkZenoh {
+    fn new(session: Session) -> UTransportSommr {
+        UTransportSommr {
             session: Arc::new(session),
             subscriber_map: Arc::new(Mutex::new(HashMap::new())),
             queryable_map: Arc::new(Mutex::new(HashMap::new())),
@@ -184,7 +185,7 @@ impl ULinkZenoh {
             ));
         };
         // Get reqid
-        let reqid = ULinkZenoh::uuid_to_string(&attributes.reqid.ok_or(
+        let reqid = UTransportSommr::uuid_to_string(&attributes.reqid.ok_or(
             UStatus::fail_with_code(UCode::InvalidArgument, "reqid doesn't exist"),
         )?);
 
@@ -228,7 +229,7 @@ impl ULinkZenoh {
 }
 
 #[async_trait]
-impl RpcClient for ULinkZenoh {
+impl RpcClient for UTransportSommr {
     async fn invoke_method(
         &self,
         topic: UUri,
@@ -253,7 +254,7 @@ impl RpcClient for ULinkZenoh {
         }
 
         // Get Zenoh key
-        let Ok(zenoh_key) = ULinkZenoh::to_zenoh_key_string(&topic) else {
+        let Ok(zenoh_key) = UTransportSommr::to_zenoh_key_string(&topic) else {
             return Err(RpcMapperError::UnexpectedError(String::from(
                 "Unable to transform to Zenoh key",
             )));
@@ -340,7 +341,7 @@ impl RpcClient for ULinkZenoh {
 }
 
 #[async_trait]
-impl RpcServer for ULinkZenoh {
+impl RpcServer for UTransportSommr {
     async fn register_rpc_listener(
         &self,
         method: UUri,
@@ -353,7 +354,7 @@ impl RpcServer for ULinkZenoh {
             .map_err(|_| UStatus::fail_with_code(UCode::InvalidArgument, "Invalid topic"))?;
 
         // Get Zenoh key
-        let zenoh_key = ULinkZenoh::to_zenoh_key_string(&method)?;
+        let zenoh_key = UTransportSommr::to_zenoh_key_string(&method)?;
         // Generate listener string for users to delete
         let hashmap_key = format!(
             "{}_{:X}",
@@ -420,7 +421,7 @@ impl RpcServer for ULinkZenoh {
                 query_map
                     .lock()
                     .unwrap()
-                    .insert(ULinkZenoh::uuid_to_string(&reqid), query);
+                    .insert(UTransportSommr::uuid_to_string(&reqid), query);
             } else {
                 listener(Err(UStatus::fail_with_code(
                     UCode::Internal,
@@ -476,7 +477,7 @@ impl RpcServer for ULinkZenoh {
 }
 
 #[async_trait]
-impl UTransport for ULinkZenoh {
+impl UTransport for UTransportSommr {
     async fn authenticate(&self, _entity: UEntity) -> Result<(), UStatus> {
         // TODO: Not implemented
         Err(UStatus::fail_with_code(
@@ -499,7 +500,7 @@ impl UTransport for ULinkZenoh {
         // TODO: Validate UAttributes (We don't know whether attributes are Publish/Request/Response, so we can't check)
 
         // Get Zenoh key
-        let zenoh_key = ULinkZenoh::to_zenoh_key_string(&topic)?;
+        let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
 
         // Check the type of UAttributes (Publish / Request / Response)
         match UMessageType::try_from(attributes.r#type) {
@@ -528,7 +529,14 @@ impl UTransport for ULinkZenoh {
             .map_err(|_| UStatus::fail_with_code(UCode::InvalidArgument, "Invalid topic"))?;
 
         // Get Zenoh key
-        let zenoh_key = ULinkZenoh::to_zenoh_key_string(&topic)?;
+        let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
+        let zenoh_key = match (&topic.authority, &zenoh_key) {
+            (Some(authority), _) if authority.remote.as_ref().map_or(false, |remote| {
+                matches!(remote, Remote::Name(name) if name == "*")
+            }) => "**",
+            _ => &zenoh_key,
+        }.to_string();
+
         // Generate listener string for users to delete
         let hashmap_key = format!(
             "{}_{:X}",
@@ -645,7 +653,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            ULinkZenoh::to_zenoh_key_string(&uuri).unwrap(),
+            UTransportSommr::to_zenoh_key_string(&uuri).unwrap(),
             String::from("body.access/1/door.front_left\\3Door")
         );
     }

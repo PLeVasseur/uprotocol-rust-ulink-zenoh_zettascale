@@ -17,7 +17,7 @@ use uprotocol_sdk::{
     transport::datamodel::UTransport,
     uprotocol::{Data, UEntity, UMessage, UResource, UStatus, UUri},
 };
-use uprotocol_zenoh_rust::ULinkZenoh;
+use uprotocol_zenoh_rust::UTransportSommr;
 use zenoh::config::Config;
 
 fn callback(result: Result<UMessage, UStatus>) {
@@ -36,7 +36,7 @@ fn callback(result: Result<UMessage, UStatus>) {
 #[async_std::main]
 async fn main() {
     println!("uProtocol subscriber example");
-    let subscriber = ULinkZenoh::new_from_config(Config::default())
+    let subscriber = UTransportSommr::new_from_config(Config::default())
         .await
         .unwrap();
 

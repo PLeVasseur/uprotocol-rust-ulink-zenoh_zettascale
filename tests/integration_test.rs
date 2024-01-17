@@ -24,12 +24,12 @@ use uprotocol_sdk::{
     },
     uri::builder::resourcebuilder::UResourceBuilder,
 };
-use uprotocol_zenoh_rust::ULinkZenoh;
+use uprotocol_zenoh_rust::UTransportSommr;
 use zenoh::config::Config;
 
 #[async_std::test]
 async fn test_utransport_register_and_unregister() {
-    let to_test = ULinkZenoh::new_from_config(Config::default())
+    let to_test = UTransportSommr::new_from_config(Config::default())
         .await
         .unwrap();
     // create uuri
@@ -73,7 +73,7 @@ async fn test_utransport_register_and_unregister() {
 
 #[async_std::test]
 async fn test_rpcserver_register_and_unregister() {
-    let to_test = ULinkZenoh::new_from_config(Config::default())
+    let to_test = UTransportSommr::new_from_config(Config::default())
         .await
         .unwrap();
     // create uuri
@@ -116,7 +116,7 @@ async fn test_rpcserver_register_and_unregister() {
 #[async_std::test]
 async fn test_publish_and_subscribe() {
     let target_data = String::from("Hello World!");
-    let to_test = ULinkZenoh::new_from_config(Config::default())
+    let to_test = UTransportSommr::new_from_config(Config::default())
         .await
         .unwrap();
     // create uuri
@@ -179,11 +179,11 @@ async fn test_publish_and_subscribe() {
 
 #[async_std::test]
 async fn test_rpc_server_client() {
-    let to_test_client = ULinkZenoh::new_from_config(Config::default())
+    let to_test_client = UTransportSommr::new_from_config(Config::default())
         .await
         .unwrap();
     let to_test_server = Arc::new(Mutex::new(
-        ULinkZenoh::new_from_config(Config::default())
+        UTransportSommr::new_from_config(Config::default())
             .await
             .unwrap(),
     ));
