@@ -529,14 +529,45 @@ impl UTransport for UTransportSommr {
             .map_err(|_| UStatus::fail_with_code(UCode::InvalidArgument, "Invalid topic"))?;
 
         // Get Zenoh key
-        let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
-        let zenoh_key = match (&topic.authority, &zenoh_key) {
-            (Some(authority), _) if authority.remote.as_ref().map_or(false, |remote| {
+        let zenoh_key_result = UTransportSommr::to_zenoh_key_string(&topic);
+
+        println!("zenoh_key_result: {:?}", zenoh_key_result);
+
+        // Ensure result is Ok before proceeding
+        let zenoh_key = match zenoh_key_result {
+            Ok(key) => key,
+            Err(e) => return Err(e), // or handle the error as needed
+        };
+
+        // Step 2: Check if the authority is a remote name with value "*"
+        let is_star_remote = match &topic.authority {
+            Some(authority) => authority.remote.as_ref().map_or(false, |remote| {
                 matches!(remote, Remote::Name(name) if name == "*")
-            }) => "**",
-            _ => &zenoh_key,
-        }.to_string();
-        println!("zenoh_key: {}", &zenoh_key);
+            }),
+            None => false,
+        };
+
+        // Insert println!() here to check is_star_remote
+        println!("is_star_remote: {:?}", is_star_remote);
+
+        // Step 3: Determine the final Zenoh key
+        let zenoh_key = if is_star_remote {
+            "**".to_string()
+        } else {
+            zenoh_key.clone()
+        };
+
+        // Insert println!() here to check final_zenoh_key
+        println!("zenoh_key: {:?}", zenoh_key);
+
+        // let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
+        // let zenoh_key = match (&topic.authority, &zenoh_key) {
+        //     (Some(authority), _) if authority.remote.as_ref().map_or(false, |remote| {
+        //         matches!(remote, Remote::Name(name) if name == "*")
+        //     }) => "**",
+        //     _ => &zenoh_key,
+        // }.to_string();
+        // println!("zenoh_key: {}", &zenoh_key);
 
         // Generate listener string for users to delete
         let hashmap_key = format!(
