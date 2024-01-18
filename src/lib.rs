@@ -100,12 +100,15 @@ impl UTransportSommr {
 
         // TODO: Check whether these characters are all used in UUri.
         // TODO: We should have the # and ? in the attachment instead of Zenoh key
-        let zenoh_key = uri_string
+        let mut zenoh_key = uri_string
             .replace('*', "\\8")
             .replace('$', "\\4")
             .replace('?', "\\0")
             .replace('#', "\\3")
             .replace("//", "\\/");
+
+        zenoh_key = "sommr/".to_owned() + &*zenoh_key;
+
         Ok(zenoh_key)
     }
 
