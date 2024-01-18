@@ -108,7 +108,7 @@ impl ULinkZenoh {
 
         zenoh_key = "up/".to_owned() + &*zenoh_key;
 
-        println!("zenoh_key: {}", zenoh_key);
+        // println!("zenoh_key: {}", zenoh_key);
         
         Ok(zenoh_key)
     }
@@ -143,7 +143,7 @@ impl ULinkZenoh {
             ));
         };
 
-        println!("ULinkZenoh::send_publish(): zenoh_key: {}", &zenoh_key);
+        // println!("ULinkZenoh::send_publish(): zenoh_key: {}", &zenoh_key);
 
         // Add attachment and payload
         let mut attachment = AttachmentBuilder::new();
@@ -157,7 +157,7 @@ impl ULinkZenoh {
             ))
             .with_attachment(attachment.build());
 
-        println!("ULinkZenoh::send_publish(): before putbuilder.res().await.map_err()");
+        // println!("ULinkZenoh::send_publish(): before putbuilder.res().await.map_err()");
 
         // Send data
         putbuilder
@@ -165,7 +165,7 @@ impl ULinkZenoh {
             .await
             .map_err(|_| UStatus::fail_with_code(UCode::Internal, "Unable to send with Zenoh"))?;
 
-        println!("ULinkZenoh::send_publish(): after putbuilder.res().await.map_err()");
+        // println!("ULinkZenoh::send_publish(): after putbuilder.res().await.map_err()");
 
         Ok(())
     }
@@ -314,9 +314,6 @@ impl RpcClient for ULinkZenoh {
         let reply = match replies.recv_async().await {
             Ok(reply) => reply,
             Err(e) => {
-                // Print out the error
-                println!("Error while receiving Zenoh reply: {:?}", e);
-
                 // Then return a custom error
                 return Err(RpcMapperError::UnexpectedError(format!(
                     "Error while receiving Zenoh reply: {:?}",
@@ -512,7 +509,7 @@ impl UTransport for ULinkZenoh {
         // Get Zenoh key
         let zenoh_key = ULinkZenoh::to_zenoh_key_string(&topic)?;
 
-        println!("ULinkZenoh::send(): zenoh_key: {}", &zenoh_key);
+        // println!("ULinkZenoh::send(): zenoh_key: {}", &zenoh_key);
 
         // Check the type of UAttributes (Publish / Request / Response)
         match UMessageType::try_from(attributes.r#type) {
