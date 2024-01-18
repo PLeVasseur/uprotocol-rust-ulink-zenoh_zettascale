@@ -120,6 +120,7 @@ impl UTransportSommr {
     async fn send_publish(
         &self,
         zenoh_key: &str,
+        topic: &UUri,
         payload: UPayload,
         attributes: UAttributes,
     ) -> Result<(), UStatus> {
@@ -142,9 +143,19 @@ impl UTransportSommr {
             ));
         };
 
+        // Serialized source UUri into protobuf
+        let mut src_uuri = vec![];
+        let Ok(()) = topic.encode(&mut src_uuri) else {
+            return Err(UStatus::fail_with_code(
+                UCode::InvalidArgument,
+                "Unable to encode topic UUri",
+            ));
+        };
+
         // Add attachment and payload
         let mut attachment = AttachmentBuilder::new();
         attachment.insert("uattributes", attr.as_slice());
+        attachment.insert("src_uuri", src_uuri.as_slice());
         let putbuilder = self
             .session
             .put(zenoh_key, buf)
@@ -508,7 +519,7 @@ impl UTransport for UTransportSommr {
         // Check the type of UAttributes (Publish / Request / Response)
         match UMessageType::try_from(attributes.r#type) {
             Ok(UMessageType::UmessageTypePublish) => {
-                self.send_publish(&zenoh_key, payload, attributes).await
+                self.send_publish(&zenoh_key, &topic, payload, attributes).await
             }
             Ok(UMessageType::UmessageTypeResponse) => {
                 self.send_response(&zenoh_key, payload, attributes).await
@@ -579,12 +590,6 @@ impl UTransport for UTransportSommr {
             // Authority does not exist
             false
         };
-        // let is_star_remote = match &topic.authority {
-        //     Some(authority) => authority.remote.as_ref().map_or(false, |remote| {
-        //         matches!(remote, Remote::Name(name) if name == "*")
-        //     }),
-        //     None => false,
-        // };
 
         // Insert println!() here to check is_star_remote
         println!("is_star_remote: {:?}", is_star_remote);
@@ -598,15 +603,6 @@ impl UTransport for UTransportSommr {
 
         // Insert println!() here to check final_zenoh_key
         println!("zenoh_key: {:?}", zenoh_key);
-
-        // let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
-        // let zenoh_key = match (&topic.authority, &zenoh_key) {
-        //     (Some(authority), _) if authority.remote.as_ref().map_or(false, |remote| {
-        //         matches!(remote, Remote::Name(name) if name == "*")
-        //     }) => "**",
-        //     _ => &zenoh_key,
-        // }.to_string();
-        // println!("zenoh_key: {}", &zenoh_key);
 
         // Generate listener string for users to delete
         let hashmap_key = format!(
@@ -639,6 +635,20 @@ impl UTransport for UTransportSommr {
                 )));
                 return;
             };
+            let Some(src_uuri) = attachment.get(&"src_uuri".as_bytes()) else {
+                listener(Err(UStatus::fail_with_code(
+                    UCode::Internal,
+                    "Unable to get source_uuri",
+                )));
+                return;
+            };
+            let Ok(source) = Message::decode(&*src_uuri) else {
+                listener(Err(UStatus::fail_with_code(
+                    UCode::Internal,
+                    "Unable to decode source uuri",
+                )));
+                return;
+            };
             // Create UPayload
             let Ok(encoding) = sample.encoding.suffix().parse::<i32>() else {
                 listener(Err(UStatus::fail_with_code(
@@ -654,7 +664,7 @@ impl UTransport for UTransportSommr {
             };
             // Create UMessage
             let msg = UMessage {
-                source: Some(topic.clone()),
+                source: Some(source),
                 attributes: Some(u_attribute),
                 payload: Some(u_payload),
             };
