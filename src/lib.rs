@@ -568,6 +568,9 @@ impl UTransport for UTransportSommr {
             Ok(UMessageType::UmessageTypeResponse) => {
                 self.send_response(&zenoh_key, payload, attributes).await
             }
+            Ok(UMessageType::UmessageTypeRequest) => {
+                self.send_publish(&zenoh_key, &topic, payload, attributes).await
+            }
             _ => Err(UStatus::fail_with_code(
                 UCode::InvalidArgument,
                 "Wrong Message type in UAttributes",
