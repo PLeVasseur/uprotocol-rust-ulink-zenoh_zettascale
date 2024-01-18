@@ -157,11 +157,15 @@ impl ULinkZenoh {
             ))
             .with_attachment(attachment.build());
 
+        println!("ULinkZenoh::send_publish(): before putbuilder.res().await.map_err()");
+
         // Send data
         putbuilder
             .res()
             .await
             .map_err(|_| UStatus::fail_with_code(UCode::Internal, "Unable to send with Zenoh"))?;
+
+        println!("ULinkZenoh::send_publish(): after putbuilder.res().await.map_err()");
 
         Ok(())
     }
