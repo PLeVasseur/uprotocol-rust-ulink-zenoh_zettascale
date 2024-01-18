@@ -100,12 +100,63 @@ impl UTransportSommr {
 
         // TODO: Check whether these characters are all used in UUri.
         // TODO: We should have the # and ? in the attachment instead of Zenoh key
-        let mut zenoh_key = uri_string
+        let zenoh_key = uri_string
             .replace('*', "\\8")
             .replace('$', "\\4")
             .replace('?', "\\0")
             .replace('#', "\\3")
             .replace("//", "\\/");
+
+        // Step 2: Check if the authority is a remote name with value "*"
+        // Step 1: Check if topic.authority exists
+        let authority_exists = uri.authority.is_some();
+
+        // Insert println!() here to check authority_exists
+        println!("authority_exists: {:?}", authority_exists);
+
+        let is_star_remote = if authority_exists {
+            // Step 2: Extract the authority reference
+            let authority_ref = uri.authority.as_ref().unwrap(); // safe unwrap because we know it exists
+
+            // Insert println!() here to check authority_ref
+            println!("authority_ref: {:?}", authority_ref);
+
+            // Step 3: Check if remote is a reference and exists
+            let remote_exists = authority_ref.remote.as_ref().is_some();
+
+            // Insert println!() here to check remote_exists
+            println!("remote_exists: {:?}", remote_exists);
+
+            if remote_exists {
+                // Step 4: Extract the remote reference
+                let remote_ref = authority_ref.remote.as_ref().unwrap(); // safe unwrap because we know it exists
+
+                // Insert println!() here to check remote_ref
+                println!("remote_ref: {:?}", remote_ref);
+
+                // Step 5: Check if the remote is a Name type with value "*"
+                matches!(remote_ref, Remote::Name(name) if name == "*")
+            } else {
+                // Remote does not exist
+                false
+            }
+        } else {
+            // Authority does not exist
+            false
+        };
+
+        // Insert println!() here to check is_star_remote
+        println!("is_star_remote: {:?}", is_star_remote);
+
+        // Step 3: Determine the final Zenoh key
+        let mut zenoh_key = if is_star_remote {
+            "**".to_string()
+        } else {
+            zenoh_key.clone()
+        };
+
+        // Insert println!() here to check final_zenoh_key
+        println!("zenoh_key: {:?}", zenoh_key);
 
         zenoh_key = "sommr/".to_owned() + &*zenoh_key;
 
@@ -543,66 +594,7 @@ impl UTransport for UTransportSommr {
             .map_err(|_| UStatus::fail_with_code(UCode::InvalidArgument, "Invalid topic"))?;
 
         // Get Zenoh key
-        let zenoh_key_result = UTransportSommr::to_zenoh_key_string(&topic);
-
-        println!("zenoh_key_result: {:?}", zenoh_key_result);
-
-        // Ensure result is Ok before proceeding
-        let zenoh_key = match zenoh_key_result {
-            Ok(key) => key,
-            Err(e) => return Err(e), // or handle the error as needed
-        };
-
-        // Step 2: Check if the authority is a remote name with value "*"
-        // Step 1: Check if topic.authority exists
-        let authority_exists = topic.authority.is_some();
-
-        // Insert println!() here to check authority_exists
-        println!("authority_exists: {:?}", authority_exists);
-
-        let is_star_remote = if authority_exists {
-            // Step 2: Extract the authority reference
-            let authority_ref = topic.authority.as_ref().unwrap(); // safe unwrap because we know it exists
-
-            // Insert println!() here to check authority_ref
-            println!("authority_ref: {:?}", authority_ref);
-
-            // Step 3: Check if remote is a reference and exists
-            let remote_exists = authority_ref.remote.as_ref().is_some();
-
-            // Insert println!() here to check remote_exists
-            println!("remote_exists: {:?}", remote_exists);
-
-            if remote_exists {
-                // Step 4: Extract the remote reference
-                let remote_ref = authority_ref.remote.as_ref().unwrap(); // safe unwrap because we know it exists
-
-                // Insert println!() here to check remote_ref
-                println!("remote_ref: {:?}", remote_ref);
-
-                // Step 5: Check if the remote is a Name type with value "*"
-                matches!(remote_ref, Remote::Name(name) if name == "*")
-            } else {
-                // Remote does not exist
-                false
-            }
-        } else {
-            // Authority does not exist
-            false
-        };
-
-        // Insert println!() here to check is_star_remote
-        println!("is_star_remote: {:?}", is_star_remote);
-
-        // Step 3: Determine the final Zenoh key
-        let zenoh_key = if is_star_remote {
-            "**".to_string()
-        } else {
-            zenoh_key.clone()
-        };
-
-        // Insert println!() here to check final_zenoh_key
-        println!("zenoh_key: {:?}", zenoh_key);
+        let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic).unwrap();
 
         // Generate listener string for users to delete
         let hashmap_key = format!(
