@@ -155,10 +155,10 @@ impl UTransportSommr {
             zenoh_key.clone()
         };
 
+        zenoh_key = "sommr/".to_owned() + &*zenoh_key;
+
         // Insert println!() here to check final_zenoh_key
         println!("zenoh_key: {:?}", zenoh_key);
-
-        zenoh_key = "sommr/".to_owned() + &*zenoh_key;
 
         Ok(zenoh_key)
     }
