@@ -121,6 +121,7 @@ impl ULinkZenoh {
     async fn send_publish(
         &self,
         zenoh_key: &str,
+        topic: &UUri,
         payload: UPayload,
         attributes: UAttributes,
     ) -> Result<(), UStatus> {
@@ -143,11 +144,19 @@ impl ULinkZenoh {
             ));
         };
 
-        // println!("ULinkZenoh::send_publish(): zenoh_key: {}", &zenoh_key);
+        // Serialized source UUri into protobuf
+        let mut src_uuri = vec![];
+        let Ok(()) = topic.encode(&mut src_uuri) else {
+            return Err(UStatus::fail_with_code(
+                UCode::InvalidArgument,
+                "Unable to encode topic UUri",
+            ));
+        };
 
         // Add attachment and payload
         let mut attachment = AttachmentBuilder::new();
         attachment.insert("uattributes", attr.as_slice());
+        attachment.insert("src_uuri", src_uuri.as_slice());
         let putbuilder = self
             .session
             .put(zenoh_key, buf)
@@ -287,9 +296,18 @@ impl RpcClient for ULinkZenoh {
             )));
         };
 
+        // Serialized source UUri into protobuf
+        let mut dest_uuri = vec![];
+        let Ok(()) = topic.encode(&mut dest_uuri) else {
+            return Err(RpcMapperError::UnexpectedError(String::from(
+                "Unable to serialize destination UUri"
+            )));
+        };
+
         // Add attachment and payload
         let mut attachment = AttachmentBuilder::new();
         attachment.insert("uattributes", attr.as_slice());
+	    attachment.insert("dest_uuri", dest_uuri.as_slice());
         let value = Value::new(buf.into()).encoding(Encoding::WithSuffix(
             KnownEncoding::AppCustom,
             payload.format.to_string().into(),
@@ -514,7 +532,7 @@ impl UTransport for ULinkZenoh {
         // Check the type of UAttributes (Publish / Request / Response)
         match UMessageType::try_from(attributes.r#type) {
             Ok(UMessageType::UmessageTypePublish) => {
-                self.send_publish(&zenoh_key, payload, attributes).await
+                self.send_publish(&zenoh_key, &topic, payload, attributes).await
             }
             Ok(UMessageType::UmessageTypeResponse) => {
                 self.send_response(&zenoh_key, payload, attributes).await
