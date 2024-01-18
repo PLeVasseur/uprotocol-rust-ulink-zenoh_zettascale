@@ -143,6 +143,8 @@ impl ULinkZenoh {
             ));
         };
 
+        println!("ULinkZenoh::send_publish(): zenoh_key: {}", &zenoh_key);
+
         // Add attachment and payload
         let mut attachment = AttachmentBuilder::new();
         attachment.insert("uattributes", attr.as_slice());
@@ -505,6 +507,8 @@ impl UTransport for ULinkZenoh {
 
         // Get Zenoh key
         let zenoh_key = ULinkZenoh::to_zenoh_key_string(&topic)?;
+
+        println!("ULinkZenoh::send(): zenoh_key: {}", &zenoh_key);
 
         // Check the type of UAttributes (Publish / Request / Response)
         match UMessageType::try_from(attributes.r#type) {
