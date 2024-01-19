@@ -31,6 +31,7 @@ use uprotocol_sdk::{
         validator::UriValidator,
     },
 };
+use uprotocol_sdk::uprotocol::Remote;
 use zenoh::runtime::Runtime;
 use zenoh::{
     config::Config,
@@ -106,10 +107,53 @@ impl ULinkZenoh {
             .replace('#', "\\3")
             .replace("//", "\\/");
 
+        // Step 2: Check if the authority is a remote name with value "*"
+        // Step 1: Check if topic.authority exists
+        let authority_exists = uri.authority.is_some();
+
+        // println!("authority_exists: {:?}", authority_exists);
+
+        let is_star_remote = if authority_exists {
+            // Step 2: Extract the authority reference
+            let authority_ref = uri.authority.as_ref().unwrap(); // safe unwrap because we know it exists
+
+            // println!("authority_ref: {:?}", authority_ref);
+
+            // Step 3: Check if remote is a reference and exists
+            let remote_exists = authority_ref.remote.as_ref().is_some();
+
+            // println!("remote_exists: {:?}", remote_exists);
+
+            if remote_exists {
+                // Step 4: Extract the remote reference
+                let remote_ref = authority_ref.remote.as_ref().unwrap(); // safe unwrap because we know it exists
+
+                // println!("remote_ref: {:?}", remote_ref);
+
+                // Step 5: Check if the remote is a Name type with value "*"
+                matches!(remote_ref, Remote::Name(name) if name == "*")
+            } else {
+                // Remote does not exist
+                false
+            }
+        } else {
+            // Authority does not exist
+            false
+        };
+
+        // println!("is_star_remote: {:?}", is_star_remote);
+
+        // Step 3: Determine the final Zenoh key
+        let mut zenoh_key = if is_star_remote {
+            "**".to_string()
+        } else {
+            zenoh_key.clone()
+        };
+
         zenoh_key = "up/".to_owned() + &*zenoh_key;
 
-        // println!("zenoh_key: {}", zenoh_key);
-        
+        // println!("zenoh_key: {:?}", zenoh_key);
+
         Ok(zenoh_key)
     }
 
@@ -588,6 +632,20 @@ impl UTransport for ULinkZenoh {
                 )));
                 return;
             };
+            let Some(src_uuri) = attachment.get(&"src_uuri".as_bytes()) else {
+                listener(Err(UStatus::fail_with_code(
+                    UCode::Internal,
+                    "Unable to get source_uuri",
+                )));
+                return;
+            };
+            let Ok(source) = Message::decode(&*src_uuri) else {
+                listener(Err(UStatus::fail_with_code(
+                    UCode::Internal,
+                    "Unable to decode source uuri",
+                )));
+                return;
+            };
             // Create UPayload
             let Ok(encoding) = sample.encoding.suffix().parse::<i32>() else {
                 listener(Err(UStatus::fail_with_code(
@@ -603,7 +661,7 @@ impl UTransport for ULinkZenoh {
             };
             // Create UMessage
             let msg = UMessage {
-                source: Some(topic.clone()),
+                source: Some(source),
                 attributes: Some(u_attribute),
                 payload: Some(u_payload),
             };
