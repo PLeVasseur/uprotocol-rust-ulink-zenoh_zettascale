@@ -560,7 +560,7 @@ impl UTransport for UTransportSommr {
         // Get Zenoh key
         let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
 
-        println!("attempting send with uattributes: {:?}", attributes);
+        // println!("attempting send with uattributes: {:?}", attributes);
 
         // Check the type of UAttributes (Publish / Request / Response)
         match UMessageType::try_from(attributes.r#type) {
