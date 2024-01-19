@@ -344,17 +344,17 @@ impl RpcClient for ULinkZenoh {
         };
 
         // Serialized source UUri into protobuf
-        let mut dest_uuri = vec![];
-        let Ok(()) = topic.encode(&mut dest_uuri) else {
+        let mut src_uuri = vec![];
+        let Ok(()) = topic.encode(&mut src_uuri) else {
             return Err(RpcMapperError::UnexpectedError(String::from(
-                "Unable to serialize destination UUri"
+                "Unable to serialize source UUri"
             )));
         };
 
         // Add attachment and payload
         let mut attachment = AttachmentBuilder::new();
         attachment.insert("uattributes", attr.as_slice());
-	    attachment.insert("dest_uuri", dest_uuri.as_slice());
+	    attachment.insert("src_uuri", src_uuri.as_slice());
         let value = Value::new(buf.into()).encoding(Encoding::WithSuffix(
             KnownEncoding::AppCustom,
             payload.format.to_string().into(),
