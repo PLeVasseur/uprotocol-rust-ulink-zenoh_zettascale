@@ -568,7 +568,8 @@ impl UTransport for UTransportSommr {
                 self.send_publish(&zenoh_key, &topic, payload, attributes).await
             }
             Ok(UMessageType::UmessageTypeResponse) => {
-                self.send_response(&zenoh_key, payload, attributes).await
+                self.send_publish(&zenoh_key, &topic, payload, attributes).await
+                // self.send_response(&zenoh_key, payload, attributes).await
             }
             Ok(UMessageType::UmessageTypeRequest) => {
                 self.send_publish(&zenoh_key, &topic, payload, attributes).await
