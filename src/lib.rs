@@ -316,6 +316,9 @@ impl RpcClient for ULinkZenoh {
             }
         }
 
+        // TODO: Speak with Steven about this -- I think here we should create the queryable against the sink
+        //  contained in UAttributes
+
         // Get Zenoh key
         let Ok(zenoh_key) = ULinkZenoh::to_zenoh_key_string(&topic) else {
             return Err(RpcMapperError::UnexpectedError(String::from(
@@ -402,8 +405,8 @@ impl RpcClient for ULinkZenoh {
                     data: Some(Data::Value(sample.payload.contiguous().to_vec())),
                 })
             }
-            Err(_) => Err(RpcMapperError::UnexpectedError(String::from(
-                "Error while parsing Zenoh reply",
+            Err(e) => Err(RpcMapperError::UnexpectedError(String::from(
+                format!("Error while parsing Zenoh reply: {:?}", e),
             ))),
         }
     }
