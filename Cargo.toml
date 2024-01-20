@@ -1,5 +1,5 @@
 [package]
-name = "uprotocol-rust-transport-sommr"
+name = "uprotocol-rust-transport-mqtt"
 version = "0.1.0"
 edition = "2021"
 

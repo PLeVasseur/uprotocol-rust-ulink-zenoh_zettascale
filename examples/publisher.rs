@@ -18,13 +18,13 @@ use uprotocol_sdk::{
     transport::datamodel::UTransport,
     uprotocol::{Data, UEntity, UPayload, UPayloadFormat, UPriority, UResource, UUri},
 };
-use uprotocol_zenoh_rust::UTransportSommr;
+use uprotocol_zenoh_rust::UTransportMqtt;
 use zenoh::config::Config;
 
 #[async_std::main]
 async fn main() {
     println!("uProtocol publisher example");
-    let publisher = UTransportSommr::new_from_config(Config::default())
+    let publisher = UTransportMqtt::new_from_config(Config::default())
         .await
         .unwrap();
 

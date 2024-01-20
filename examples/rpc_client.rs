@@ -17,13 +17,13 @@ use uprotocol_sdk::{
     uprotocol::{Data, UEntity, UPayload, UPayloadFormat, UPriority, UUri, Uuid},
     uri::builder::resourcebuilder::UResourceBuilder,
 };
-use uprotocol_zenoh_rust::UTransportSommr;
+use uprotocol_zenoh_rust::UTransportMqtt;
 use zenoh::config::Config;
 
 #[async_std::main]
 async fn main() {
     println!("uProtocol RPC client example");
-    let rpc_client = UTransportSommr::new_from_config(Config::default())
+    let rpc_client = UTransportMqtt::new_from_config(Config::default())
         .await
         .unwrap();
 

@@ -42,7 +42,7 @@ use zenoh::{
 };
 
 pub struct ZenohListener {}
-pub struct UTransportSommr {
+pub struct UTransportMqtt {
     session: Arc<Session>,
     subscriber_map: Arc<Mutex<HashMap<String, Subscriber<'static, ()>>>>,
     queryable_map: Arc<Mutex<HashMap<String, Queryable<'static, ()>>>>,
@@ -50,20 +50,20 @@ pub struct UTransportSommr {
     callback_counter: AtomicU64,
 }
 
-impl UTransportSommr {
+impl UTransportMqtt {
     /// # Errors
     /// Will return `Err` if unable to create Zenoh session
-    pub async fn new_from_config(config: Config) -> Result<UTransportSommr, UStatus> {
+    pub async fn new_from_config(config: Config) -> Result<UTransportMqtt, UStatus> {
         let Ok(session) = zenoh::open(config).res().await else {
             return Err(UStatus::fail_with_code(
                 UCode::Internal,
                 "Unable to open Zenoh session from config",
             ));
         };
-        Ok(UTransportSommr::new(session))
+        Ok(UTransportMqtt::new(session))
     }
 
-    pub async fn new_from_runtime(runtime: Runtime) -> Result<UTransportSommr, UStatus> {
+    pub async fn new_from_runtime(runtime: Runtime) -> Result<UTransportMqtt, UStatus> {
         // create a zenoh Session that shares the same Runtime as zenohd
         let Ok(session) = zenoh::init(runtime).res().await else {
             return Err(UStatus::fail_with_code(
@@ -71,11 +71,11 @@ impl UTransportSommr {
                 "Unable to open Zenoh session from runtime",
             ));
         };
-        Ok(UTransportSommr::new(session))
+        Ok(UTransportMqtt::new(session))
     }
 
-    fn new(session: Session) -> UTransportSommr {
-        UTransportSommr {
+    fn new(session: Session) -> UTransportMqtt {
+        UTransportMqtt {
             session: Arc::new(session),
             subscriber_map: Arc::new(Mutex::new(HashMap::new())),
             queryable_map: Arc::new(Mutex::new(HashMap::new())),
@@ -150,7 +150,7 @@ impl UTransportSommr {
             zenoh_key.clone()
         };
 
-        zenoh_key = "sommr/".to_owned() + &*zenoh_key;
+        zenoh_key = "mqtt/".to_owned() + &*zenoh_key;
 
         // println!("zenoh_key: {:?}", zenoh_key);
 
@@ -244,7 +244,7 @@ impl UTransportSommr {
             ));
         };
         // Get reqid
-        let reqid = UTransportSommr::uuid_to_string(&attributes.reqid.ok_or(
+        let reqid = UTransportMqtt::uuid_to_string(&attributes.reqid.ok_or(
             UStatus::fail_with_code(UCode::InvalidArgument, "reqid doesn't exist"),
         )?);
 
@@ -288,7 +288,7 @@ impl UTransportSommr {
 }
 
 #[async_trait]
-impl RpcClient for UTransportSommr {
+impl RpcClient for UTransportMqtt {
     async fn invoke_method(
         &self,
         topic: UUri,
@@ -313,7 +313,7 @@ impl RpcClient for UTransportSommr {
         }
 
         // Get Zenoh key
-        let Ok(zenoh_key) = UTransportSommr::to_zenoh_key_string(&topic) else {
+        let Ok(zenoh_key) = UTransportMqtt::to_zenoh_key_string(&topic) else {
             return Err(RpcMapperError::UnexpectedError(String::from(
                 "Unable to transform to Zenoh key",
             )));
@@ -399,7 +399,7 @@ impl RpcClient for UTransportSommr {
 }
 
 #[async_trait]
-impl RpcServer for UTransportSommr {
+impl RpcServer for UTransportMqtt {
     async fn register_rpc_listener(
         &self,
         method: UUri,
@@ -412,7 +412,7 @@ impl RpcServer for UTransportSommr {
             .map_err(|_| UStatus::fail_with_code(UCode::InvalidArgument, "Invalid topic"))?;
 
         // Get Zenoh key
-        let zenoh_key = UTransportSommr::to_zenoh_key_string(&method)?;
+        let zenoh_key = UTransportMqtt::to_zenoh_key_string(&method)?;
         // Generate listener string for users to delete
         let hashmap_key = format!(
             "{}_{:X}",
@@ -479,7 +479,7 @@ impl RpcServer for UTransportSommr {
                 query_map
                     .lock()
                     .unwrap()
-                    .insert(UTransportSommr::uuid_to_string(&reqid), query);
+                    .insert(UTransportMqtt::uuid_to_string(&reqid), query);
             } else {
                 listener(Err(UStatus::fail_with_code(
                     UCode::Internal,
@@ -535,7 +535,7 @@ impl RpcServer for UTransportSommr {
 }
 
 #[async_trait]
-impl UTransport for UTransportSommr {
+impl UTransport for UTransportMqtt {
     async fn authenticate(&self, _entity: UEntity) -> Result<(), UStatus> {
         // TODO: Not implemented
         Err(UStatus::fail_with_code(
@@ -558,7 +558,7 @@ impl UTransport for UTransportSommr {
         // TODO: Validate UAttributes (We don't know whether attributes are Publish/Request/Response, so we can't check)
 
         // Get Zenoh key
-        let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic)?;
+        let zenoh_key = UTransportMqtt::to_zenoh_key_string(&topic)?;
 
         // println!("attempting send with uattributes: {:?}", attributes);
 
@@ -593,7 +593,7 @@ impl UTransport for UTransportSommr {
             .map_err(|_| UStatus::fail_with_code(UCode::InvalidArgument, "Invalid topic"))?;
 
         // Get Zenoh key
-        let zenoh_key = UTransportSommr::to_zenoh_key_string(&topic).unwrap();
+        let zenoh_key = UTransportMqtt::to_zenoh_key_string(&topic).unwrap();
 
         // Generate listener string for users to delete
         let hashmap_key = format!(
@@ -725,7 +725,7 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(
-            UTransportSommr::to_zenoh_key_string(&uuri).unwrap(),
+            UTransportMqtt::to_zenoh_key_string(&uuri).unwrap(),
             String::from("body.access/1/door.front_left\\3Door")
         );
     }

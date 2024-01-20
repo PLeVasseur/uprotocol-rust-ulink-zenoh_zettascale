@@ -21,14 +21,14 @@ use uprotocol_sdk::{
     uprotocol::{Data, UEntity, UMessage, UMessageType, UPayload, UPayloadFormat, UStatus, UUri},
     uri::builder::resourcebuilder::UResourceBuilder,
 };
-use uprotocol_zenoh_rust::UTransportSommr;
+use uprotocol_zenoh_rust::UTransportMqtt;
 use zenoh::config::Config;
 
 #[async_std::main]
 async fn main() {
     println!("uProtocol RPC server example");
     let rpc_server = Arc::new(Mutex::new(
-        UTransportSommr::new_from_config(Config::default())
+        UTransportMqtt::new_from_config(Config::default())
             .await
             .unwrap(),
     ));
