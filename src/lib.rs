@@ -94,8 +94,20 @@ impl UTransportSommr {
                 "Unable to transform to Zenoh key",
             ));
         };
+
         if uri_string.starts_with('/') {
             let _ = uri_string.remove(0);
+            println!("removed leading /, uri_string: {}", &uri_string);
+        }
+
+        if uri_string.starts_with('/') {
+            let _ = uri_string.remove(0);
+            println!("removed leading /, uri_string: {}", &uri_string);
+        }
+
+        if uri_string.starts_with('/') {
+            let _ = uri_string.remove(0);
+            println!("removed leading /, uri_string: {}", &uri_string);
         }
 
         // TODO: Check whether these characters are all used in UUri.
