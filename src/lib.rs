@@ -89,7 +89,7 @@ impl ULinkZenoh {
         // up://<user@><device>.<domain><:port>/<ue_name>/<ue_version>/<resource|rpc.method><#message>
         //            UAuthority               /        UEntity       /           UResource
 
-        let has_name_authority = uri.authority.as_deref().map_or(false, |a: UAuthority| { a.has_name() });
+        let has_name_authority = uri.authority.as_ref().map_or(false, |a: &UAuthority| { a.has_name() });
 
         let Ok(mut uri_string) = LongUriSerializer::serialize(uri) else {
             return Err(UStatus::fail_with_code(
