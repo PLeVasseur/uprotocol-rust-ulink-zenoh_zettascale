@@ -16,7 +16,7 @@ pedantic = "deny"
 # ZettaScale one
 #uprotocol-sdk = { git = "https://github.com/ZettaScaleLabs/uprotocol-rust.git", branch = "support_rpcserver" }
 # Pete one
-uprotocol-sdk = { git = "https://github.com/PLeVasseur/uprotocol-rust_fork.git", branch = "feature/experiment_send_sync" }
+uprotocol-sdk = { git = "https://github.com/PLeVasseur/uprotocol-rust_fork.git", branch = "feature/turn_send_sync_back_off" }
 # Debug
 #uprotocol-sdk = { path = "../uprotocol-rust" }
 prost = "0.12"
