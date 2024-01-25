@@ -152,7 +152,7 @@ impl ULinkZenoh {
 
         zenoh_key = "up/".to_owned() + &*zenoh_key;
 
-        // println!("zenoh_key: {:?}", zenoh_key);
+        println!("zenoh_key: {:?}", zenoh_key);
 
         Ok(zenoh_key)
     }
