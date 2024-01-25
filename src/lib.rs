@@ -31,7 +31,7 @@ use uprotocol_sdk::{
         validator::UriValidator,
     },
 };
-use uprotocol_sdk::uprotocol::Remote;
+use uprotocol_sdk::uprotocol::{Remote, UAuthority};
 use zenoh::runtime::Runtime;
 use zenoh::{
     config::Config,
@@ -88,6 +88,9 @@ impl ULinkZenoh {
         // uProtocol Uri format: https://github.com/eclipse-uprotocol/uprotocol-spec/blob/6f0bb13356c0a377013bdd3342283152647efbf9/basics/uri.adoc#11-rfc3986
         // up://<user@><device>.<domain><:port>/<ue_name>/<ue_version>/<resource|rpc.method><#message>
         //            UAuthority               /        UEntity       /           UResource
+
+        let has_name_authority = uri.authority.as_deref().map_or(false, |a: UAuthority| { a.has_name() });
+
         let Ok(mut uri_string) = LongUriSerializer::serialize(uri) else {
             return Err(UStatus::fail_with_code(
                 UCode::Internal,
@@ -159,7 +162,13 @@ impl ULinkZenoh {
             zenoh_key.clone()
         };
 
-        zenoh_key = "up/".to_owned() + &*zenoh_key;
+        let mut authority_prepend = if has_name_authority {
+            "auth/"
+        } else {
+            ""
+        };
+
+        zenoh_key = "up/".to_owned() + authority_prepend + &*zenoh_key;
 
         println!("zenoh_key: {:?}", zenoh_key);
 
