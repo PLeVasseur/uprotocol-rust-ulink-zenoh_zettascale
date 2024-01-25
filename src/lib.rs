@@ -94,6 +94,9 @@ impl ULinkZenoh {
                 "Unable to transform to Zenoh key",
             ));
         };
+
+        println!("uri_string: {}", &uri_string);
+
         if uri_string.starts_with('/') {
             let _ = uri_string.remove(0);
         }
